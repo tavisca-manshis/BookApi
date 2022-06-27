@@ -13,7 +13,8 @@
 
 ### Add Book
 ```GET /book/addBook```
-Body: 
+
+##### Body: 
 
 ```
 {
@@ -24,7 +25,7 @@ Body:
 ```
 ### Edit Book 
 ```GET /book/editBook/{id}```
-Body: 
+##### Body: 
 
 ```
 {
