@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-namespace BookApi.Contracts
+﻿using BookApi.Contracts;
+using Microsoft.EntityFrameworkCore;
+namespace BookApi.Data
 {
     public class BookContext : DbContext
     {
