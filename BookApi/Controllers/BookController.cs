@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using BookApi.Contracts;
 using Microsoft.EntityFrameworkCore;
+using BookApi.Services;
+using BookApi.Constants;
 
 namespace BookApi.Controllers
 {
@@ -12,26 +14,22 @@ namespace BookApi.Controllers
     [ApiController]
     public class BookController : ControllerBase
     {
-        private readonly BookContext _context;
-        string[] allowedGenre = { "SciFi", "Horror", "Romance"};
-
-        public BookController(BookContext bookContext) {
-            _context = bookContext;
+        private readonly IBookService _bookService;
+        public BookController(IBookService bookService) {
+            _bookService = bookService;
         }
 
         [HttpGet]
         public List<Book> getBooks()
         {
-           var books = _context.Book.ToList();
-           return books;
+            return _bookService.getBooks();
         }
 
-        [Route("getBook/{id}")]
+        [Route(KeyStore.ApiRoute.GetBook)]
         [HttpGet]
-        public async Task<IActionResult> getBookById(long id)
+        public IActionResult getBookById(string id)
         {
-            var book = await _context.Book.FindAsync(id);
-
+            var book = _bookService.getBookById(id);
             if (book == null)
             {
                 return NotFound();
@@ -40,69 +38,61 @@ namespace BookApi.Controllers
             return Ok(book);
         }
 
-        [Route("getBooks/{author}/{genre}")]
+        [Route(KeyStore.ApiRoute.GetCustomBooks)]
         [HttpGet]
-        public async Task<IActionResult> getBooksByAuthorAndGenre(string author, string genre)
+        public IActionResult getBooksByAuthorAndGenre(string author, string genre)
         {
-            if (!allowedGenre.Contains(genre))
+            if (!_bookService.isValidGenre(genre))
             {
                 return BadRequest();
             }
 
-            List<Book> book = await _context.Book.Where(book => book.Author == author && book.Genre == genre).ToListAsync();
+            var books = _bookService.getBooksByAuthorAndGenre(author, genre);
 
-            if (book == null)
+            if (books == null)
             {
                 return NotFound();
             }
-
-            return Ok(book);
+            return Ok(books);
         }
 
-        [Route("addBook")]
+        [Route(KeyStore.ApiRoute.AddBook)]
         [HttpPost]
-        public async Task<IActionResult> addBook([FromBody]Book book)
+        public IActionResult addBook([FromBody]Book book)
         {
-            if (!allowedGenre.Contains(book.Genre))
+            if (!_bookService.isValidGenre(book.Genre))
             {
                 return BadRequest();
             }
 
-            _context.Book.Add(book);
-            await _context.SaveChangesAsync();
+            _bookService.addBook(book);
 
             return Ok("Book " + book.Name + " added !");
         }
 
         [Route("editBook/{id}")]
         [HttpPut]
-        public async Task<IActionResult> editBook(long id, [FromBody]Book book)
+        public IActionResult editBook(string id, [FromBody]Book book)
         {
-            if (id != book.Id || !allowedGenre.Contains(book.Genre))
+            if (id != book.Id || !_bookService.isValidGenre(book.Genre))
             {
                 return BadRequest();
             }
-
-            _context.Entry(book).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-
+            _bookService.editBook(id, book);
             return Ok("Book " + book.Name + " updated !"); 
         }
 
-        [Route("deleteBook/{id}")]
+        [Route(KeyStore.ApiRoute.DeleteBook)]
         [HttpDelete]
-        public async Task<IActionResult> deleteBook(long id)
+        public IActionResult deleteBook(string id)
         {
-            var book = await _context.Book.FindAsync(id);
+            Book book = _bookService.getBookById(id);
 
             if (book == null)
             {
                 return NotFound();
             }
-
-            _context.Book.Remove(book);
-            await _context.SaveChangesAsync();
-
+            _bookService.deleteBook(book);
             return Ok("Book " + book.Name + " deleted !");
         }
 

@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using BookApi.Data;
+using BookApi.Services;
 
 namespace BookApi
 {
@@ -28,9 +30,14 @@ namespace BookApi
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddTransient<IBookService, BookService>();
 
-            services.AddDbContext<BookContext>(optionns =>
-            optionns.UseInMemoryDatabase("Books"));
+            // services.AddDbContext<BookContext>(optionns =>
+            // optionns.UseInMemoryDatabase("Books"));
+
+            services.AddDbContext<BookContext>(optionns => {
+                optionns.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"));
+            });
 
         }
 
