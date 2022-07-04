@@ -7,11 +7,14 @@ using BookApi.Contracts;
 using Microsoft.EntityFrameworkCore;
 using BookApi.Services;
 using BookApi.Constants;
+using BookApi.Filters;
 
 namespace BookApi.Controllers
 {
     [Route("[controller]")]
     [ApiController]
+    [ResourceFilter()]
+    [ExceptionFilter]
     public class BookController : ControllerBase
     {
         private readonly IBookService _bookService;
@@ -42,11 +45,6 @@ namespace BookApi.Controllers
         [HttpGet]
         public IActionResult getBooksByAuthorAndGenre(string author, string genre)
         {
-            if (!_bookService.isValidGenre(genre))
-            {
-                return BadRequest();
-            }
-
             var books = _bookService.getBooksByAuthorAndGenre(author, genre);
 
             if (books == null)
@@ -58,27 +56,28 @@ namespace BookApi.Controllers
 
         [Route(KeyStore.ApiRoute.AddBook)]
         [HttpPost]
+        [AuthorizationFilter]
         public IActionResult addBook([FromBody]Book book)
         {
-            if (!_bookService.isValidGenre(book.Genre))
+            var response = _bookService.addBook(book);
+
+            if (response == null || response.Errors.Count > 0)
             {
-                return BadRequest();
+                return BadRequest(response);
             }
-
-            _bookService.addBook(book);
-
             return Ok("Book " + book.Name + " added !");
         }
 
         [Route("editBook/{id}")]
         [HttpPut]
+        [AuthorizationFilter]
         public IActionResult editBook(string id, [FromBody]Book book)
         {
-            if (id != book.Id || !_bookService.isValidGenre(book.Genre))
+            var response = _bookService.editBook(id, book);
+            if (response == null || response.Errors.Count > 0)
             {
-                return BadRequest();
+                return BadRequest(response);
             }
-            _bookService.editBook(id, book);
             return Ok("Book " + book.Name + " updated !"); 
         }
 
