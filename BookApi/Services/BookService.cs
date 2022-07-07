@@ -1,6 +1,7 @@
 ﻿using BookApi.Contracts;
 using BookApi.Data;
 using BookApi.Validators;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -22,9 +23,17 @@ namespace BookApi.Services
             _addBookRequestValidator = new AddBookRequestValidator();
             _editBookRequestValidator = new EditBookRequestValidator();
         }
-        public List<Book> getBooks()
+        public BookListResponse getBooks()
         {
-            return _context.Book.ToList();
+            BookListResponse response = new BookListResponse();
+            try
+            {
+                response.BookList = _context.Book.ToList();
+            } catch(Exception e)
+            {
+                response.Errors.Add(e.Message);
+            }
+            return response;
         }
 
         public Book getBookById(string id)
@@ -40,22 +49,29 @@ namespace BookApi.Services
         public BookResponse addBook(Book book)
         {
             BookResponse bookResponse = null;
-            bookResponse = translateToBookResponse(book);
+            try
+            {
+                bookResponse = translateToBookResponse(book);
 
-            var validatedRequest = _addBookRequestValidator.Validate(book);
-            if (validatedRequest.IsValid)
-            {
-                Guid guid = Guid.NewGuid();
-                book.Id = guid.ToString();
-                _context.Book.Add(book);
-                _context.SaveChanges();
-            } else
-            {
-                bookResponse = new BookResponse();
-                foreach(var error in validatedRequest.Errors)
+                var validatedRequest = _addBookRequestValidator.Validate(book);
+                if (validatedRequest.IsValid)
                 {
-                    bookResponse.Errors.Add(error.ErrorMessage);
+                    Guid guid = Guid.NewGuid();
+                    book.Id = guid.ToString();
+                    _context.Book.Add(book);
+                    _context.SaveChanges();
                 }
+                else
+                {
+                    bookResponse = new BookResponse();
+                    foreach (var error in validatedRequest.Errors)
+                    {
+                        bookResponse.Errors.Add(error.ErrorMessage);
+                    }
+                }
+            } catch (Exception e)
+            {
+                bookResponse.Errors.Add(e.Message);
             }
             return bookResponse;
 
@@ -64,28 +80,45 @@ namespace BookApi.Services
         public BookResponse editBook(string id, Book book)
         {
             BookResponse bookResponse = null;
-            bookResponse = translateToBookResponse(book);
+            try
+            {
+                bookResponse = translateToBookResponse(book);
 
-            var validatedRequest = _editBookRequestValidator.Validate(book);
-            if (validatedRequest.IsValid)
-            {
-                _context.Entry(book).State = EntityState.Modified;
-                _context.SaveChanges();
-            }
-            else
-            {
-                foreach (var error in validatedRequest.Errors)
+                var validatedRequest = _editBookRequestValidator.Validate(book);
+                if (validatedRequest.IsValid)
                 {
-                    bookResponse.Errors.Add(error.ErrorMessage);
+                    _context.Entry(book).State = EntityState.Modified;
+                    _context.SaveChanges();
                 }
+                else
+                {
+                    foreach (var error in validatedRequest.Errors)
+                    {
+                        bookResponse.Errors.Add(error.ErrorMessage);
+                    }
+                }
+            } catch (Exception e)
+            {
+                bookResponse.Errors.Add(e.Message);
+
             }
             return bookResponse;
         }
 
-        public void deleteBook(Book book)
+        public BookResponse deleteBook(Book book)
         {
-            _context.Book.Remove(book);
-            _context.SaveChanges();
+            BookResponse bookResponse = new BookResponse();
+            try
+            {
+                _context.Book.Remove(book);
+                _context.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                bookResponse.Errors.Add(e.Message);
+
+            }
+            return bookResponse;
         }
 
         public BookResponse translateToBookResponse (Book book)

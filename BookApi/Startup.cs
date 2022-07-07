@@ -15,6 +15,8 @@ using Microsoft.EntityFrameworkCore;
 using BookApi.Data;
 using BookApi.Services;
 using BookApi.Filters;
+using FluentValidation;
+using BookApi.Validators;
 
 namespace BookApi
 {

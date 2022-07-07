@@ -23,7 +23,7 @@ namespace BookApi.Controllers
         }
 
         [HttpGet]
-        public List<Book> getBooks()
+        public BookListResponse getBooks()
         {
             return _bookService.getBooks();
         }
@@ -59,13 +59,13 @@ namespace BookApi.Controllers
         [AuthorizationFilter]
         public IActionResult addBook([FromBody]Book book)
         {
-            var response = _bookService.addBook(book);
+            BookResponse response = _bookService.addBook(book);
 
             if (response == null || response.Errors.Count > 0)
             {
                 return BadRequest(response);
             }
-            return Ok("Book " + book.Name + " added !");
+            return Ok(response);
         }
 
         [Route("editBook/{id}")]
@@ -73,12 +73,12 @@ namespace BookApi.Controllers
         [AuthorizationFilter]
         public IActionResult editBook(string id, [FromBody]Book book)
         {
-            var response = _bookService.editBook(id, book);
+            BookResponse response = _bookService.editBook(id, book);
             if (response == null || response.Errors.Count > 0)
             {
                 return BadRequest(response);
             }
-            return Ok("Book " + book.Name + " updated !"); 
+            return Ok(response); 
         }
 
         [Route(KeyStore.ApiRoute.DeleteBook)]
@@ -91,8 +91,8 @@ namespace BookApi.Controllers
             {
                 return NotFound();
             }
-            _bookService.deleteBook(book);
-            return Ok("Book " + book.Name + " deleted !");
+            BookResponse response = _bookService.deleteBook(book);
+            return Ok(response);
         }
 
     }
