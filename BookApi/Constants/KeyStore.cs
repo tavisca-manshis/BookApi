@@ -15,5 +15,10 @@ namespace BookApi.Constants
             public const string EditBook = "editBook/{id}";
             public const string DeleteBook = "deleteBook/{id}";
         }
+
+        public static class UserRole
+        {
+            public const string Admin = "admin";
+        }
     }
 }
