@@ -12,6 +12,7 @@ namespace BookApi.Validators
         public EditBookRequestValidator()
         {
             RuleLevelCascadeMode = CascadeMode.Stop;
+             RuleLevelCascadeMode = CascadeMode.Stop;
             RuleFor(request => request.Name)
                 .NotNull().WithMessage("Name is required")
                 .NotEmpty().WithMessage("Name should not be empty")
@@ -23,9 +24,13 @@ namespace BookApi.Validators
             RuleFor(request => request.Genre)
                 .NotNull().WithMessage("Genre is required")
                 .NotEmpty().WithMessage("Genre should not be empty")
-                .Equal("Horror").WithMessage("Genre should be either Adventure, Romance or Horror.")
-                .Equal("Adventure").WithMessage("Genre should be either Adventure, Romance or Horror.")
-                .Equal("Romance").WithMessage("Genre should be either Adventure, Romance or Horror.");
+                .Must(genre => IsGenreValid(genre)).WithMessage("Genre should be either Adventure, Romance or Horror.");
+        }
+
+        private bool IsGenreValid(string genre)
+        {
+            string[] allowedGenre = { "Horror", "Adventure", "Romance" };
+            return allowedGenre.Contains(genre);
         }
     }
 }
