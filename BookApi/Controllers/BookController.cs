@@ -13,7 +13,7 @@ namespace BookApi.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    [ResourceFilter()]
+    [ResourceFilter]
     [ExceptionFilter]
     public class BookController : ControllerBase
     {
