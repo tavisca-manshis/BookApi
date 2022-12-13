@@ -1,5 +1,7 @@
 ﻿using BookApi.Contracts;
 using BookApi.Data;
+using BookApi.Validators;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -13,14 +15,25 @@ namespace BookApi.Services
     {
 
         private readonly BookContext _context;
-        string[] allowedGenre = { "SciFi", "Horror", "Romance" };
+        private readonly AddBookRequestValidator _addBookRequestValidator;
+        private readonly EditBookRequestValidator _editBookRequestValidator;
         public BookService(BookContext bookContext)
         {
             _context = bookContext;
+            _addBookRequestValidator = new AddBookRequestValidator();
+            _editBookRequestValidator = new EditBookRequestValidator();
         }
-        public List<Book> getBooks()
+        public BookListResponse getBooks()
         {
-            return _context.Book.ToList();
+            BookListResponse response = new BookListResponse();
+            try
+            {
+                response.BookList = _context.Book.ToList();
+            } catch(Exception e)
+            {
+                response.Errors.Add(e.Message);
+            }
+            return response;
         }
 
         public Book getBookById(string id)
@@ -33,29 +46,89 @@ namespace BookApi.Services
             return _context.Book.Where(book => book.Author == author && book.Genre == genre).ToList();
         }
 
-        public bool isValidGenre(string genre)
+        public BookResponse addBook(Book book)
         {
-            return allowedGenre.Contains(genre);
+            BookResponse bookResponse = null;
+            try
+            {
+                bookResponse = translateToBookResponse(book);
+
+                var validatedRequest = _addBookRequestValidator.Validate(book);
+                if (validatedRequest.IsValid)
+                {
+                    Guid guid = Guid.NewGuid();
+                    book.Id = guid.ToString();
+                    _context.Book.Add(book);
+                    _context.SaveChanges();
+                }
+                else
+                {
+                    bookResponse = new BookResponse();
+                    foreach (var error in validatedRequest.Errors)
+                    {
+                        bookResponse.Errors.Add(error.ErrorMessage);
+                    }
+                }
+            } catch (Exception e)
+            {
+                bookResponse.Errors.Add(e.Message);
+            }
+            return bookResponse;
+
         }
 
-        public void addBook(Book book)
+        public BookResponse editBook(string id, Book book)
         {
-            Guid guid = Guid.NewGuid();
-            book.Id = guid.ToString();
-            _context.Book.Add(book);
-            _context.SaveChanges();
+            BookResponse bookResponse = null;
+            try
+            {
+                bookResponse = translateToBookResponse(book);
+
+                var validatedRequest = _editBookRequestValidator.Validate(book);
+                if (validatedRequest.IsValid)
+                {
+                    _context.Entry(book).State = EntityState.Modified;
+                    _context.SaveChanges();
+                }
+                else
+                {
+                    foreach (var error in validatedRequest.Errors)
+                    {
+                        bookResponse.Errors.Add(error.ErrorMessage);
+                    }
+                }
+            } catch (Exception e)
+            {
+                bookResponse.Errors.Add(e.Message);
+
+            }
+            return bookResponse;
         }
 
-        public void editBook(string id, Book book)
+        public BookResponse deleteBook(Book book)
         {
-            _context.Entry(book).State = EntityState.Modified;
-            _context.SaveChanges();
+            BookResponse bookResponse = new BookResponse();
+            try
+            {
+                _context.Book.Remove(book);
+                _context.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                bookResponse.Errors.Add(e.Message);
+
+            }
+            return bookResponse;
         }
 
-        public void deleteBook(Book book)
+        public BookResponse translateToBookResponse (Book book)
         {
-            _context.Book.Remove(book);
-            _context.SaveChanges();
+            BookResponse bookResponse = new BookResponse();
+            bookResponse.Name = book.Name;
+            bookResponse.Author = book.Author;
+            bookResponse.Genre = book.Genre;
+
+            return bookResponse;
         }
     }
 }
